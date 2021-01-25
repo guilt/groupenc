@@ -1,0 +1,11 @@
+.idea
+.tox
+.coverage
+*.egg-info
+*.pyc
+venv
+build
+dist
+coverage_reports
+*.pem
+*.json
