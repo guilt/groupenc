@@ -1,6 +1,5 @@
-from groupenc.identity import initializeOrGetKeyPair
+from groupenc.identity import Identity
 
 if __name__ == '__main__':
-
-    kp = initializeOrGetKeyPair()
-    print(kp.publickey())
+    print(Identity().encryptPublic("Hello, World!"))
+    print(Identity().encryptPrivate("Hello, World!"))

@@ -1,7 +1,11 @@
-from .config import *
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
-def bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
+import os
+from .config import DEFAULT_PUBLIC_KEY, DEFAULT_PRIVATE_KEY, DEFAULT_KEY_BITS
+from .helpers import encodeToBase64, makeBytesOf
+
+def _bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
     keyPair = RSA.generate(DEFAULT_KEY_BITS)
 
     privateKey = keyPair.export_key()
@@ -14,10 +18,30 @@ def bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_P
 
     return keyPair
 
-def initializeOrGetKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
+
+def _initializeOrGetKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
     if os.path.exists(privateKeyFile):
         with open(privateKeyFile, "rb") as privateKeyFileStream:
             privateKey = privateKeyFileStream.read()
             return RSA.import_key(privateKey)
     else:
-        return bootstrapKeyPair(privateKeyFile, publicKeyFile)
+        return _bootstrapKeyPair(privateKeyFile, publicKeyFile)
+
+
+class Identity:
+
+    keyPair = None
+
+    def __init__(self, privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
+        self.keyPair = _initializeOrGetKeyPair(privateKeyFile, publicKeyFile)
+
+    def getKeyPair(self):
+        return self.keyPair
+
+    def encryptPublic(self, message):
+        pkcs1 = PKCS1_OAEP.new(self.keyPair.publickey())
+        return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
+
+    def encryptPrivate(self, message):
+        pkcs1 = PKCS1_OAEP.new(self.keyPair.export_key())
+        return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))

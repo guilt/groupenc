@@ -1,6 +1,6 @@
 # Group Encryption Utilities
 
-A Python library to enable Group Encryption, with a CLI.
+Group Encryption utilities in Python, with a CLI.
 
 # Installation
 
