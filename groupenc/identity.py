@@ -1,9 +1,12 @@
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
-
 import os
+
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+
 from .config import DEFAULT_PUBLIC_KEY, DEFAULT_PRIVATE_KEY, DEFAULT_KEY_BITS
-from .helpers import encodeToBase64, makeBytesOf
+from .helpers import encodeToBase64, decodeFromBase64, makeBytesOf, makeStringOf
+
 
 def _bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
     keyPair = RSA.generate(DEFAULT_KEY_BITS)
@@ -38,10 +41,23 @@ class Identity:
     def getKeyPair(self):
         return self.keyPair
 
+    def getPublicKey(self):
+        return makeStringOf(self.keyPair.publickey().export_key())
+
+    def getPublicKeyId(self):
+        publicKeyN = self.keyPair.publickey().n
+        publicKeyE = self.keyPair.publickey().e
+        sha256 = SHA256.new(makeBytesOf("{}:{}".format(publicKeyN, publicKeyE)))
+        return sha256.hexdigest()
+
     def encryptPublic(self, message):
         pkcs1 = PKCS1_OAEP.new(self.keyPair.publickey())
         return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
 
     def encryptPrivate(self, message):
-        pkcs1 = PKCS1_OAEP.new(self.keyPair.export_key())
+        pkcs1 = PKCS1_OAEP.new(self.keyPair)
         return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
+
+    def decrypt(self, message):
+        pkcs1 = PKCS1_OAEP.new(self.keyPair)
+        return makeStringOf(pkcs1.decrypt(decodeFromBase64(message)))

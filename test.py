@@ -1,5 +1,11 @@
-from groupenc.identity import Identity
+from groupenc.vault import Vault
 
 if __name__ == '__main__':
-    print(Identity().encryptPublic("Hello, World!"))
-    print(Identity().encryptPrivate("Hello, World!"))
+    vault=Vault()
+    vault.addSecret("password", "Hello World!")
+    vault.addSecret("password", "Not Hello World!")
+    vault.addSecret("not a password", "Test!")
+    vault.removeSecret("password")
+    print(vault.getSecret("password"))
+    print(vault.getSecret("not a password"))
+    vault.save()
