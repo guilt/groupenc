@@ -27,15 +27,15 @@ def _saveVault(vaultContents, vaultFile=DEFAULT_VAULT_FILE):
 def _bootstrapVault(identity, vaultFile=DEFAULT_VAULT_FILE):
     groupKey = _bootstrapGroupKey()
     publicKey = identity.getPublicKey()
-    publicKeyId = identity.getPublicKeyId()
+    keyId = identity.getId()
     encryptedGroupKey = identity.encryptPublic(groupKey)
 
     vaultContents = {
         PUBLIC_KEY_HIVE: {
-            publicKeyId: publicKey
+            keyId: publicKey
         },
         GROUP_KEY_HIVE: {
-            publicKeyId: encryptedGroupKey
+            keyId: encryptedGroupKey
         },
         SECRETS_HIVE: {
         },
@@ -110,7 +110,7 @@ class Vault:
         self.vaultContents = _initializeOrGetVault(self.identity, self.vaultFile)
 
     def _getGroupKeyAsBytes(self):
-        groupKeyEncrypted = self.vaultContents.get(GROUP_KEY_HIVE).get(self.identity.getPublicKeyId())
+        groupKeyEncrypted = self.vaultContents.get(GROUP_KEY_HIVE).get(self.identity.getId())
         return self.identity.decrypt(groupKeyEncrypted)
 
     def listSecrets(self):
@@ -120,11 +120,15 @@ class Vault:
             if secretKey:
                 yield secretKey
 
+    def listKeys(self):
+        for keyId, keyValue in self.vaultContents.get(PUBLIC_KEY_HIVE, {}).items():
+            yield keyId, keyValue
+
     def getSecret(self, secretKey):
         assert secretKey
         groupKey = self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
-        encryptedSecretValue = self.vaultContents[SECRETS_HIVE].get(encryptedSecretKey)
+        encryptedSecretValue = self.vaultContents.get(SECRETS_HIVE, {}).get(encryptedSecretKey)
         if encryptedSecretValue:
             secretValue = _decryptValue(groupKey, encryptedSecretValue)
             return secretValue
