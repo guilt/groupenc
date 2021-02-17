@@ -23,11 +23,11 @@ def _bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_
 
 
 def _initializeOrGetKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_PUBLIC_KEY):
-    if os.path.exists(privateKeyFile):
+    if privateKeyFile and os.path.exists(privateKeyFile):
         with open(privateKeyFile, "rb") as privateKeyFileStream:
             privateKey = privateKeyFileStream.read()
             return RSA.import_key(privateKey)
-    elif os.path.exists(publicKeyFile):
+    elif publicKeyFile and os.path.exists(publicKeyFile):
         with open(publicKeyFile, "rb") as publicKeyFileStream:
             publicKey = publicKeyFileStream.read()
             return RSA.import_key(publicKey)
@@ -50,9 +50,6 @@ class Identity:
         else:
             self.keyPair = _initializeOrGetKeyPair(privateKeyFile, publicKeyFile)
 
-    def getKeyPair(self):
-        return self.keyPair
-
     def getPublicKey(self):
         assert self.keyPair
         publicKey = self.keyPair.publickey()
@@ -68,22 +65,16 @@ class Identity:
         sha256 = SHA256.new(makeBytesOf("{}:{}".format(publicKeyN, publicKeyE)))
         return sha256.hexdigest()
 
-    def encryptPublic(self, message):
+    def encryptPublic(self, message, encoding=DEFAULT_KEY_ENCODING):
         assert message
         assert self.keyPair
         publicKey = self.keyPair.publickey()
         assert publicKey
         pkcs1 = PKCS1_OAEP.new(publicKey)
-        return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
+        return encodeToBase64(pkcs1.encrypt(makeBytesOf(message, encoding)))
 
-    def encryptPrivate(self, message):
+    def decrypt(self, message, encoding=DEFAULT_KEY_ENCODING):
         assert message
         assert self.keyPair
         pkcs1 = PKCS1_OAEP.new(self.keyPair)
-        return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
-
-    def decrypt(self, message):
-        assert message
-        assert self.keyPair
-        pkcs1 = PKCS1_OAEP.new(self.keyPair)
-        return makeStringOf(pkcs1.decrypt(decodeFromBase64(message)))
+        return makeStringOf(pkcs1.decrypt(decodeFromBase64(message)), encoding)

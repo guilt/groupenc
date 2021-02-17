@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 
+from groupenc.config import DEFAULT_VALUE_ENCODING, DEFAULT_PRIVATE_KEY, DEFAULT_PUBLIC_KEY
 from groupenc.identity import Identity
+
 
 class TestIdentity(unittest.TestCase):
 
@@ -35,23 +37,28 @@ RD4AHbY9l8WHeSiISGbAO/AaCK6AR/izYUXUjkI=
         identity = Identity(givenKey=self.publicKey)
         self.assertEqual(identity.getId(), "a3436e524870d4bea0b9d36a83e9b0d937a88f8e92bd2e99d6d383beb5a67641")
         for plain in self.testVectors:
-            encrypted = identity.encryptPublic(plain)
-            with self.assertRaises(TypeError) as _:
-                _ = identity.decrypt(encrypted)
+            _ = identity.encryptPublic(plain, DEFAULT_VALUE_ENCODING)
 
     def testIdentityInitializationWithPrivateKey(self):
         identity = Identity(givenKey=self.privateKey)
         self.assertEqual(identity.getId(), "a3436e524870d4bea0b9d36a83e9b0d937a88f8e92bd2e99d6d383beb5a67641")
         self.assertEqual(identity.getPublicKey(), self.publicKey)
         for plain in self.testVectors:
-            encrypted = identity.encryptPublic(plain)
-            decrypted = identity.decrypt(encrypted)
+            encrypted = identity.encryptPublic(plain, DEFAULT_VALUE_ENCODING)
+            decrypted = identity.decrypt(encrypted, DEFAULT_VALUE_ENCODING)
             assert plain == decrypted
 
     def testFileBasedInitialization(self):
         for _ in range(5):
             identity = Identity()
             for plain in self.testVectors:
-                encrypted = identity.encryptPublic(plain)
-                decrypted = identity.decrypt(encrypted)
+                encrypted = identity.encryptPublic(plain, DEFAULT_VALUE_ENCODING)
+                decrypted = identity.decrypt(encrypted, DEFAULT_VALUE_ENCODING)
                 assert plain == decrypted
+
+    def testFileBasedInitializationpartial(self):
+        identityOriginal = Identity()
+        identityPartialPublic = Identity(privateKeyFile=None, publicKeyFile=DEFAULT_PUBLIC_KEY)
+        self.assertEqual(identityOriginal.getId(), identityPartialPublic.getId())
+        identityPartialPrivate = Identity(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=None)
+        self.assertEqual(identityOriginal.getId(), identityPartialPrivate.getId())

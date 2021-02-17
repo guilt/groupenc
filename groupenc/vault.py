@@ -6,7 +6,8 @@ from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
-from .config import DEFAULT_VAULT_FILE, DEFAULT_GROUP_KEY_BITS, DEFAULT_PAD_BYTES, DEFAULT_IV_BITS, DEFAULT_KEY_ENCODING, ALLOW_SECRET_LISTING
+from .config import DEFAULT_VAULT_FILE, DEFAULT_GROUP_KEY_BITS, DEFAULT_PAD_BYTES, DEFAULT_IV_BITS, \
+    DEFAULT_KEY_ENCODING, HASH_SECRETS
 from .helpers import makeBytesOf, makeStringOf, encodeToBase64, decodeFromBase64
 from .identity import Identity
 
@@ -23,6 +24,7 @@ def _saveVault(vaultContents, vaultFile=DEFAULT_VAULT_FILE):
     with open(vaultFile, "w") as vaultFileStream:
         json.dump(vaultContents, vaultFileStream, indent=4, sort_keys=True)
 
+
 def _inductIntoVault(vaultContents, identity, groupKey):
     publicKey = identity.getPublicKey()
     keyId = identity.getId()
@@ -31,6 +33,7 @@ def _inductIntoVault(vaultContents, identity, groupKey):
     vaultContents[GROUP_KEY_HIVE][keyId] = encryptedGroupKey
     return vaultContents
 
+
 def _disownFromVault(vaultContents, identity):
     keyId = identity.getId()
     if keyId in vaultContents.get(PUBLIC_KEY_HIVE, {}):
@@ -38,6 +41,7 @@ def _disownFromVault(vaultContents, identity):
     if keyId in vaultContents.get(GROUP_KEY_HIVE, {}):
         del vaultContents[GROUP_KEY_HIVE][keyId]
     return vaultContents
+
 
 def _bootstrapVault(identity, vaultFile=DEFAULT_VAULT_FILE):
     groupKey = _bootstrapGroupKey()
@@ -93,19 +97,23 @@ def _decryptValue(encryptionKey, message):
     return makeStringOf(message)
 
 
-def _encryptKey(encryptionKey, message):
-    if ALLOW_SECRET_LISTING:
-        return _encryptValue(encryptionKey, message)
-    assert encryptionKey
+def _hashKey(message):
+    assert message
     sha256 = SHA256.new(makeBytesOf(message))
     return sha256.hexdigest()
 
+def _encryptKey(encryptionKey, message):
+    assert encryptionKey
+    if HASH_SECRETS:
+        return _hashKey(message)
+    return _encryptValue(encryptionKey, message)
+
 
 def _decryptKey(encryptionKey, message):
-    if ALLOW_SECRET_LISTING:
-        return _decryptValue(encryptionKey, message)
-    return None
-
+    assert encryptionKey
+    if HASH_SECRETS:
+        return None
+    return makeBytesOf(_decryptValue(encryptionKey, message))
 
 class Vault:
     identity = None
@@ -123,56 +131,88 @@ class Vault:
             return None
         return self.identity.decrypt(groupKeyEncrypted)
 
+    def _listSecretsEncrypted(self):
+        for encryptedSecretKey in self.vaultContents.get(SECRETS_HIVE, {}):
+            yield encryptedSecretKey
+
     def listSecrets(self):
         groupKey = self._getGroupKeyAsBytes()
-        for encryptedSecretKey in self.vaultContents.get(SECRETS_HIVE, {}):
-            secretKey = _decryptKey(groupKey, encryptedSecretKey)
-            if secretKey:
-                yield secretKey
+        for encryptedSecretKey in self._listSecretsEncrypted():
+            decryptedKey = _decryptKey(groupKey, encryptedSecretKey)
+            if decryptedKey:
+                yield decryptedKey
 
     def listKeys(self):
         for keyId, keyValue in self.vaultContents.get(PUBLIC_KEY_HIVE, {}).items():
             yield keyId, keyValue
 
-    def getSecret(self, secretKey):
-        assert secretKey
-        groupKey = self._getGroupKeyAsBytes()
-        encryptedSecretKey = _encryptKey(groupKey, secretKey)
+    def _getSecretForEncryptedKey(self, encryptedSecretKey, groupKey=None):
+        assert encryptedSecretKey
+        groupKey = groupKey or self._getGroupKeyAsBytes()
         encryptedSecretValue = self.vaultContents.get(SECRETS_HIVE, {}).get(encryptedSecretKey)
         if encryptedSecretValue:
             secretValue = _decryptValue(groupKey, encryptedSecretValue)
             return secretValue
         return None
 
-    def addSecret(self, secretKey, secretValue=None):
+    def getSecret(self, secretKey, groupKey=None):
         assert secretKey
-        secretValue = secretValue or ""
-        groupKey = self._getGroupKeyAsBytes()
+        groupKey = groupKey or self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
+        return self._getSecretForEncryptedKey(encryptedSecretKey)
+
+    def _addSecretForEncryptedKey(self, encryptedSecretKey, secretValue=None, groupKey=None):
+        assert encryptedSecretKey
+        groupKey = groupKey or self._getGroupKeyAsBytes()
+        secretValue = secretValue or ""
         encryptedSecretValue = _encryptValue(groupKey, secretValue)
         self.vaultContents[SECRETS_HIVE][encryptedSecretKey] = encryptedSecretValue
+
+    def addSecret(self, secretKey, secretValue=None, groupKey=None):
+        assert secretKey
+        groupKey = groupKey or self._getGroupKeyAsBytes()
+        encryptedSecretKey = _encryptKey(groupKey, secretKey)
+        self._addSecretForEncryptedKey(encryptedSecretKey, secretValue, groupKey)
+
+    def _removeSecretForEncryptedKey(self, encryptedSecretKey):
+        assert encryptedSecretKey
+        if encryptedSecretKey in self.vaultContents.get(SECRETS_HIVE, {}):
+            del self.vaultContents[SECRETS_HIVE][encryptedSecretKey]
 
     def removeSecret(self, secretKey):
         assert secretKey
         groupKey = self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
-        del self.vaultContents[SECRETS_HIVE][encryptedSecretKey]
+        self._removeSecretForEncryptedKey(encryptedSecretKey)
 
-    def induct(self, givenKey = None, groupKey = None):
+    def induct(self, givenKey=None, groupKey=None):
+        assert givenKey
         groupKey = groupKey or self._getGroupKeyAsBytes()
-        assert groupKey
-        identity = self.identity if (givenKey == None) else Identity(givenKey=givenKey)
+        identity = Identity(givenKey=givenKey) if givenKey else self.identity
         self.vaultContents = _inductIntoVault(self.vaultContents, identity, groupKey)
 
-    def disown(self, givenKey = None):
-        identity = self.identity if (givenKey == None) else Identity(givenKey=givenKey)
+    def disown(self, givenKey=None):
+        assert givenKey
+        identity = Identity(givenKey=givenKey) if givenKey else self.identity
         self.vaultContents = _disownFromVault(self.vaultContents, identity)
 
     def rotate(self):
-        newGroupKey = _bootstrapGroupKey()
         groupKey = self._getGroupKeyAsBytes()
+        newGroupKey = _bootstrapGroupKey()
         assert newGroupKey != groupKey
-        for keyId, givenKey in self.listKeys():
+
+        if not HASH_SECRETS:
+            for secretKey in list(self.listSecrets()):
+                secretValue = self.getSecret(secretKey)
+                self.removeSecret(secretKey)
+                self.addSecret(secretKey, secretValue, newGroupKey)
+        else:
+            for encryptedSecretKey in list(self._listSecretsEncrypted()):
+                secretValue = self._getSecretForEncryptedKey(encryptedSecretKey)
+                self._removeSecretForEncryptedKey(encryptedSecretKey)
+                self._addSecretForEncryptedKey(encryptedSecretKey, secretValue, newGroupKey)
+
+        for _, givenKey in dict(self.listKeys()).items():
             self.disown(givenKey)
             self.induct(givenKey, newGroupKey)
 

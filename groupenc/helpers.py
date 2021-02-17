@@ -2,6 +2,7 @@ import base64
 
 from .config import DEFAULT_VALUE_ENCODING, DEFAULT_KEY_ENCODING
 
+
 def makeBytesOf(payload, encoding=DEFAULT_VALUE_ENCODING):
     if not isinstance(payload, (bytes, bytearray)):
         payload = payload.encode(encoding)

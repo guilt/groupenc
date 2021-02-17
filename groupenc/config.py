@@ -15,4 +15,4 @@ DEFAULT_VALUE_ENCODING = 'utf8'
 DEFAULT_VAULT_FILE = os.getenv('GROUPENC_FILE', '.groupenc.json')
 DEFAULT_PRIVATE_KEY = os.getenv('GROUPENC_PRIVATE_KEY', os.path.expanduser('~/.groupenc_private'))
 DEFAULT_PUBLIC_KEY = os.getenv('GROUPENC_PUBLIC_KEY', os.path.expanduser('~/.groupenc_public'))
-ALLOW_SECRET_LISTING = bool(os.getenv('GROUPENC_HASH_SECRETS', False))
+HASH_SECRETS = os.getenv('GROUPENC_HASH_SECRETS')
