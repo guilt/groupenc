@@ -1,4 +1,5 @@
 import os
+import stat
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
@@ -14,6 +15,7 @@ def _bootstrapKeyPair(privateKeyFile=DEFAULT_PRIVATE_KEY, publicKeyFile=DEFAULT_
     privateKey = keyPair.export_key()
     with open(privateKeyFile, "wb") as privateKeyFileStream:
         privateKeyFileStream.write(privateKey)
+    os.chmod(privateKeyFile, stat.S_IRUSR)
 
     publicKey = keyPair.publickey().export_key()
     with open(publicKeyFile, "wb") as publicKeyFileStream:

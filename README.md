@@ -18,8 +18,8 @@ To Bootstrap a vault, use:
 groupenc bootstrap
 ```
 
-It would typically create a file called `.vault.json` and a private key/ public key pair in `~/.groupenc_private`
-and `~/.groupenc_public`.
+It would typically create a file called `.groupenc.json` and a private key
+/public key pair in `~/.groupenc_private` and `~/.groupenc_public`.
 
 ## Secrets
 
