@@ -1,4 +1,4 @@
-# Group Encryption Utilities
+# groupenc: Group Encryption Utilities
 
 Group Encryption utilities in Python, with a CLI.
 
@@ -87,3 +87,18 @@ groupenc rotate
 Note that the secrets that they already have access to cannot be unshared/forgotten, so you should manually revoke their
 accesses from any services. It is a good practice to share multiple vault files and induct people based on their actual
 role/need to access.
+
+
+## Running Unit Tests
+
+```bash
+pip install tox
+tox
+```
+
+## Call for Testing Volunteers
+
+The code was tested on Python 2.7, 3.8.
+
+Please volunteer to test it and send in your patches (or) bug reports.
+Design feedback always welcome.

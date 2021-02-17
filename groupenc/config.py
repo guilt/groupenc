@@ -9,6 +9,9 @@ DEFAULT_IV_BYTES = DEFAULT_IV_BITS // 8
 DEFAULT_PAD_BITS = 128
 DEFAULT_PAD_BYTES = DEFAULT_PAD_BITS // 8
 
+DEFAULT_KEY_ENCODING = 'latin1'
+DEFAULT_VALUE_ENCODING = 'utf8'
+
 DEFAULT_VAULT_FILE = os.getenv('GROUPENC_FILE', '.groupenc.json')
 DEFAULT_PRIVATE_KEY = os.getenv('GROUPENC_PRIVATE_KEY', os.path.expanduser('~/.groupenc_private'))
 DEFAULT_PUBLIC_KEY = os.getenv('GROUPENC_PUBLIC_KEY', os.path.expanduser('~/.groupenc_public'))

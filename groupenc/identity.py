@@ -4,7 +4,7 @@ from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 
-from .config import DEFAULT_PUBLIC_KEY, DEFAULT_PRIVATE_KEY, DEFAULT_KEY_BITS
+from .config import DEFAULT_PUBLIC_KEY, DEFAULT_PRIVATE_KEY, DEFAULT_KEY_BITS, DEFAULT_KEY_ENCODING
 from .helpers import encodeToBase64, decodeFromBase64, makeBytesOf, makeStringOf
 
 
@@ -69,6 +69,7 @@ class Identity:
         return sha256.hexdigest()
 
     def encryptPublic(self, message):
+        assert message
         assert self.keyPair
         publicKey = self.keyPair.publickey()
         assert publicKey
@@ -76,11 +77,13 @@ class Identity:
         return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
 
     def encryptPrivate(self, message):
+        assert message
         assert self.keyPair
         pkcs1 = PKCS1_OAEP.new(self.keyPair)
         return encodeToBase64(pkcs1.encrypt(makeBytesOf(message)))
 
     def decrypt(self, message):
+        assert message
         assert self.keyPair
         pkcs1 = PKCS1_OAEP.new(self.keyPair)
         return makeStringOf(pkcs1.decrypt(decodeFromBase64(message)))
