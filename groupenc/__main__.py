@@ -108,7 +108,7 @@ def _commandSecretAdd(args):
 
     _printSuccess('Key Added.')
 
-def commandSecretRemove(args):
+def _commandSecretRemove(args):
     """
     Remove a Secret
     :param args: System Arguments Passed
@@ -131,7 +131,7 @@ def commandSecretRemove(args):
 
     _printSuccess('Key Removed.')
 
-def commandSecretList(args):
+def _commandSecretList(args):
     """
     List Secrets
     :param args: System Arguments Passed
@@ -149,7 +149,7 @@ def commandSecretList(args):
     for secretKey in vault.listSecrets():
         _printMessage(secretKey)
 
-def commandSecretShow(args):
+def _commandSecretShow(args):
     """
     Show a Secret
     :param args: System Arguments Passed
@@ -169,7 +169,7 @@ def commandSecretShow(args):
     if secretValue:
         _printMessage(secretValue)
 
-def commandInduct(args):
+def _commandInduct(args):
     """
     Induct a User
     :param args: System Arguments Passed
@@ -192,7 +192,7 @@ def commandInduct(args):
 
     _printSuccess('Inducted.')
 
-def commandDisown(args):
+def _commandDisown(args):
     """
     Disown a User
     :param args: System Arguments Passed
@@ -217,7 +217,7 @@ def commandDisown(args):
 
     _printSuccess('Disowned.')
 
-def commandRotate(args):
+def _commandRotate(args):
     """
     Rotate Keys in Vault
     :param args: System Arguments Passed
@@ -261,26 +261,26 @@ def main():
 
     parserSecretRemove = subparserSecret.add_parser('remove', help='Remove a Secret')
     parserSecretRemove.add_argument('key', type=str, help='Key to Remove')
-    parserSecretRemove.set_defaults(func=commandSecretRemove)
+    parserSecretRemove.set_defaults(func=_commandSecretRemove)
 
     parserSecretList = subparserSecret.add_parser('list', help='List Secrets')
-    parserSecretList.set_defaults(func=commandSecretList)
+    parserSecretList.set_defaults(func=_commandSecretList)
 
     parserSecretShow = subparserSecret.add_parser('show', help='Show a Secret')
     parserSecretShow.add_argument('key', type=str, help='Key to Show')
-    parserSecretShow.set_defaults(func=commandSecretShow)
+    parserSecretShow.set_defaults(func=_commandSecretShow)
 
     parserInduct = subparsers.add_parser('induct', help='Induct a User')
     parserInduct.add_argument('identity', type=str, help='Public Key Value or File to Induct.')
-    parserInduct.set_defaults(func=commandInduct)
+    parserInduct.set_defaults(func=_commandInduct)
 
     parserDisown = subparsers.add_parser('disown', help='Disown a User')
     parserDisown.add_argument('--identity', type=str, help='Public Key Value or File to Disown. If none, Remove self.')
     parserDisown.add_argument('--confirm', type=str, help='Confirm when Removing Self.')
-    parserDisown.set_defaults(func=commandDisown)
+    parserDisown.set_defaults(func=_commandDisown)
 
     parserRotate = subparsers.add_parser('rotate', help='Rotate Keys in Vault')
-    parserRotate.set_defaults(func=commandRotate)
+    parserRotate.set_defaults(func=_commandRotate)
 
     args = parser.parse_args()
     try:
