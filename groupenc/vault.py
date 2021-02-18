@@ -68,14 +68,14 @@ def _initializeOrGetVault(identity, vaultFile=DEFAULT_VAULT_FILE):
 
 
 def _makeIV(encryptionKey, ivBits=DEFAULT_IV_BITS):
-    assert encryptionKey
+    assert encryptionKey, "Encryption Key Unspecified"
     sha256 = SHA256.new(makeBytesOf(encryptionKey, DEFAULT_KEY_ENCODING))
     return sha256.digest()[:(ivBits // 8)]
 
 
 def _encryptValue(encryptionKey, message):
-    assert encryptionKey
-    assert message
+    assert encryptionKey, "Encryption Key Unspecified"
+    assert message, "Message Unspecified"
     encryptionKey = makeBytesOf(encryptionKey, DEFAULT_KEY_ENCODING)
     iv = _makeIV(encryptionKey)
     aes = AES.new(encryptionKey, AES.MODE_GCM, nonce=iv)
@@ -86,8 +86,8 @@ def _encryptValue(encryptionKey, message):
 
 
 def _decryptValue(encryptionKey, message):
-    assert encryptionKey
-    assert message
+    assert encryptionKey, "Encryption Key Unspecified"
+    assert message, "Message Unspecified"
     encryptionKey = makeBytesOf(encryptionKey, DEFAULT_KEY_ENCODING)
     iv = _makeIV(encryptionKey)
     aes = AES.new(encryptionKey, AES.MODE_GCM, nonce=iv)
@@ -98,19 +98,19 @@ def _decryptValue(encryptionKey, message):
 
 
 def _hashKey(message):
-    assert message
+    assert message, "Message Unspecified"
     sha256 = SHA256.new(makeBytesOf(message))
     return sha256.hexdigest()
 
 def _encryptKey(encryptionKey, message):
-    assert encryptionKey
+    assert encryptionKey, "Encryption Key Unspecified"
     if HASH_SECRETS:
         return _hashKey(message)
     return _encryptValue(encryptionKey, message)
 
 
 def _decryptKey(encryptionKey, message):
-    assert encryptionKey
+    assert encryptionKey, "Encryption Key Unspecified"
     if HASH_SECRETS:
         return None
     return makeBytesOf(_decryptValue(encryptionKey, message))
@@ -136,18 +136,19 @@ class Vault:
             yield encryptedSecretKey
 
     def listSecrets(self):
-        groupKey = self._getGroupKeyAsBytes()
-        for encryptedSecretKey in self._listSecretsEncrypted():
-            decryptedKey = _decryptKey(groupKey, encryptedSecretKey)
-            if decryptedKey:
-                yield decryptedKey
+        if not HASH_SECRETS:
+            groupKey = self._getGroupKeyAsBytes()
+            for encryptedSecretKey in self._listSecretsEncrypted():
+                decryptedKey = _decryptKey(groupKey, encryptedSecretKey)
+                if decryptedKey:
+                    yield makeStringOf(decryptedKey)
 
     def listKeys(self):
         for keyId, keyValue in self.vaultContents.get(PUBLIC_KEY_HIVE, {}).items():
             yield keyId, keyValue
 
     def _getSecretForEncryptedKey(self, encryptedSecretKey, groupKey=None):
-        assert encryptedSecretKey
+        assert encryptedSecretKey, "Encrypted Secret Unspecified"
         groupKey = groupKey or self._getGroupKeyAsBytes()
         encryptedSecretValue = self.vaultContents.get(SECRETS_HIVE, {}).get(encryptedSecretKey)
         if encryptedSecretValue:
@@ -156,50 +157,50 @@ class Vault:
         return None
 
     def getSecret(self, secretKey, groupKey=None):
-        assert secretKey
+        assert secretKey, "Secret Unspecified"
         groupKey = groupKey or self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
         return self._getSecretForEncryptedKey(encryptedSecretKey)
 
     def _addSecretForEncryptedKey(self, encryptedSecretKey, secretValue=None, groupKey=None):
-        assert encryptedSecretKey
+        assert encryptedSecretKey, "Encrypted Secret Unspecified"
         groupKey = groupKey or self._getGroupKeyAsBytes()
         secretValue = secretValue or ""
         encryptedSecretValue = _encryptValue(groupKey, secretValue)
         self.vaultContents[SECRETS_HIVE][encryptedSecretKey] = encryptedSecretValue
 
     def addSecret(self, secretKey, secretValue=None, groupKey=None):
-        assert secretKey
+        assert secretKey, "Secret Unspecified"
         groupKey = groupKey or self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
         self._addSecretForEncryptedKey(encryptedSecretKey, secretValue, groupKey)
 
     def _removeSecretForEncryptedKey(self, encryptedSecretKey):
-        assert encryptedSecretKey
+        assert encryptedSecretKey, "Encrypted Secret Unspecified"
         if encryptedSecretKey in self.vaultContents.get(SECRETS_HIVE, {}):
             del self.vaultContents[SECRETS_HIVE][encryptedSecretKey]
 
     def removeSecret(self, secretKey):
-        assert secretKey
+        assert secretKey, "Secret Unspecified"
         groupKey = self._getGroupKeyAsBytes()
         encryptedSecretKey = _encryptKey(groupKey, secretKey)
         self._removeSecretForEncryptedKey(encryptedSecretKey)
 
-    def induct(self, givenKey=None, groupKey=None):
-        assert givenKey
+    def induct(self, givenKey, groupKey=None):
+        assert givenKey, "Unable to get an Identity to Induct"
         groupKey = groupKey or self._getGroupKeyAsBytes()
-        identity = Identity(givenKey=givenKey) if givenKey else self.identity
+        assert groupKey, "Unable to get a Group Key"
+        identity = Identity(givenKey=givenKey)
         self.vaultContents = _inductIntoVault(self.vaultContents, identity, groupKey)
 
     def disown(self, givenKey=None):
-        assert givenKey
         identity = Identity(givenKey=givenKey) if givenKey else self.identity
         self.vaultContents = _disownFromVault(self.vaultContents, identity)
 
     def rotate(self):
         groupKey = self._getGroupKeyAsBytes()
         newGroupKey = _bootstrapGroupKey()
-        assert newGroupKey != groupKey
+        assert newGroupKey != groupKey, "Unable to derive a New Group Key"
 
         if not HASH_SECRETS:
             for secretKey in list(self.listSecrets()):

@@ -1,64 +1,243 @@
 #!/usr/bin/env python
-#pylint: disable=W0107
+# pylint: disable=W0107
+from __future__ import print_function
+
 import argparse
+import os
+import sys
 
 from .config import DEFAULT_PUBLIC_KEY, DEFAULT_PRIVATE_KEY, DEFAULT_VAULT_FILE
+from .identity import Identity
+from .vault import Vault
 
-def commandBootstrap(args):
+try:
+    import colorama
+
+    colorama.init()
+    OUTPUT_COLOR = 'auto'
+except ImportError:
+    OUTPUT_COLOR = 'never'
+
+S_RED = '\033[31m'
+S_BLUE = '\033[34m'
+S_GREEN = '\033[32m'
+S_CYAN = '\033[36m'
+S_MAGENTA = '\033[35m'
+S_YELLOW = '\033[33m'
+S_WHITE = '\033[37m'
+S_RESET = '\033[0m'
+
+
+def _coloredPrint(message, color, file_=sys.stdout):
+    output_color = False
+    if OUTPUT_COLOR == 'never':
+        pass
+    elif OUTPUT_COLOR == 'auto':
+        output_color = file_.isatty()
+    elif OUTPUT_COLOR == 'always':
+        output_color = True
+    if output_color:
+        return '{}{}{}'.format(color, message, S_RESET)
+    return message
+
+
+def _printMessage(message, color=S_WHITE, file_=sys.stdout):
+    print(_coloredPrint(message, color, file_=file_), file=file_)
+
+
+def _debugMessage(message, file_=sys.stderr):
+    if os.getenv('DEBUG'):
+        print(_coloredPrint(message, color=S_YELLOW, file_=file_), file=file_)
+
+
+def _printSuccess(message, file_=sys.stdout):
+    print(_coloredPrint(message, S_GREEN, file_=file_), file=file_)
+
+
+def _printError(message, file_=sys.stderr):
+    print(_coloredPrint(message, S_RED, file_=file_), file=file_)
+
+
+def _valueOrContentsOf(value):
+    if value and value.startswith("@"):
+        valueFile = value.lstrip("@")
+        if os.path.exists(valueFile):
+            with open(valueFile, "rb") as valueStream:
+                value = valueStream.read()
+    return value
+
+
+def _commandBootstrap(args):
     """
     Bootstrap
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
 
-def commandSecretAdd(args):
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    _ = Vault(identity=identity, vaultFile=vaultFile)
+
+    _printSuccess('Vault Ready.')
+
+
+def _commandSecretAdd(args):
     """
     Add a Secret
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    secretKey = args.key
+    secretValue = _valueOrContentsOf(args.value)
+    _debugMessage('Adding Secret {} ...'.format(secretKey))
+    vault.addSecret(secretKey, secretValue)
+    _debugMessage('Saving Vault ...')
+    vault.save()
+    _debugMessage('Vault Saved.')
+
+    _printSuccess('Key Added.')
 
 def commandSecretRemove(args):
     """
     Remove a Secret
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    secretKey = args.key
+    _debugMessage('Removing Secret {} ...'.format(secretKey))
+    vault.removeSecret(secretKey)
+    _debugMessage('Saving Vault ...')
+    vault.save()
+    _debugMessage('Vault Saved.')
+
+    _printSuccess('Key Removed.')
 
 def commandSecretList(args):
     """
     List Secrets
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    _debugMessage('Listing Secrets ...')
+    for secretKey in vault.listSecrets():
+        _printMessage(secretKey)
 
 def commandSecretShow(args):
     """
     Show a Secret
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    secretKey = args.key
+    _debugMessage('Displaying Secret {} ...'.format(secretKey))
+    secretValue = vault.getSecret(secretKey)
+    if secretValue:
+        _printMessage(secretValue)
 
 def commandInduct(args):
     """
     Induct a User
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    identityNew = _valueOrContentsOf(args.identity)
+    _debugMessage('Inducting Identity ...')
+    vault.induct(identityNew)
+    _debugMessage('Saving Vault ...')
+    vault.save()
+    _debugMessage('Vault Saved.')
+
+    _printSuccess('Inducted.')
 
 def commandDisown(args):
     """
     Disown a User
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    identityToDisown = _valueOrContentsOf(args.identity)
+    confirm = args.confirm
+    _debugMessage('Disowning Identity ...')
+    assert (identityToDisown or confirm), 'Must Confirm when Removing Self'
+    vault.disown(identityToDisown)
+    _debugMessage('Saving Vault ...')
+    vault.save()
+    _debugMessage('Vault Saved.')
+
+    _printSuccess('Disowned.')
 
 def commandRotate(args):
     """
     Rotate Keys in Vault
     :param args: System Arguments Passed
     """
-    pass
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    _debugMessage('Rotating Vault ...')
+    vault.rotate()
+    _debugMessage('Saving Vault ...')
+    vault.save()
+    _debugMessage('Vault Saved.')
+
+    _printSuccess('Rotated.')
 
 def main():
     """Main Program."""
@@ -69,51 +248,52 @@ def main():
 
     subparsers = parser.add_subparsers()
 
-    parser_bootstrap = subparsers.add_parser('bootstrap', help='Bootstrap')
-    parser_bootstrap.set_defaults(func=commandBootstrap)
+    parserBootstrap = subparsers.add_parser('bootstrap', help='Bootstrap')
+    parserBootstrap.set_defaults(func=_commandBootstrap)
 
-    parser_secret = subparsers.add_parser('secret', help='Manage Secrets')
-    subparsers_parser_secret = parser_secret.add_subparsers()
+    parserSecret = subparsers.add_parser('secret', help='Manage Secrets')
+    subparserSecret = parserSecret.add_subparsers()
 
-    parser_secret_add = subparsers_parser_secret.add_parser('add', help='Add a Secret')
-    parser_secret_add.add_argument('key', type=str, help='Key to Add')
-    parser_secret_add.add_argument('value', type=str, help='Value to Add')
-    parser_secret_add.set_defaults(func=commandSecretAdd)
+    parserSecretAdd = subparserSecret.add_parser('add', help='Add a Secret')
+    parserSecretAdd.add_argument('key', type=str, help='Key to Add')
+    parserSecretAdd.add_argument('value', type=str, help='Value to Add')
+    parserSecretAdd.set_defaults(func=_commandSecretAdd)
 
-    parser_secret_remove = subparsers_parser_secret.add_parser('remove', help='Remove a Secret')
-    parser_secret_remove.add_argument('key', type=str, help='Key to Remove')
-    parser_secret_add.set_defaults(func=commandSecretRemove)
+    parserSecretRemove = subparserSecret.add_parser('remove', help='Remove a Secret')
+    parserSecretRemove.add_argument('key', type=str, help='Key to Remove')
+    parserSecretRemove.set_defaults(func=commandSecretRemove)
 
-    parser_secret_list = subparsers_parser_secret.add_parser('list', help='List Secrets')
-    parser_secret_list.set_defaults(func=commandSecretList)
+    parserSecretList = subparserSecret.add_parser('list', help='List Secrets')
+    parserSecretList.set_defaults(func=commandSecretList)
 
-    parser_secret_show = subparsers_parser_secret.add_parser('show', help='Show a Secret')
-    parser_secret_show.add_argument('key', type=str, help='Key to Show')
-    parser_secret_add.set_defaults(func=commandSecretShow)
+    parserSecretShow = subparserSecret.add_parser('show', help='Show a Secret')
+    parserSecretShow.add_argument('key', type=str, help='Key to Show')
+    parserSecretShow.set_defaults(func=commandSecretShow)
 
-    parser_induct = subparsers.add_parser('induct', help='Induct a User')
-    parser_induct.add_argument('--identity', type=str, help='Public Key or Public Key File to Induct')
-    parser_induct.set_defaults(func=commandInduct)
+    parserInduct = subparsers.add_parser('induct', help='Induct a User')
+    parserInduct.add_argument('identity', type=str, help='Public Key Value or File to Induct.')
+    parserInduct.set_defaults(func=commandInduct)
 
-    parser_induct = subparsers.add_parser('disown', help='Disown a User')
-    parser_induct.add_argument('--identity', type=str, help='Public Key or Public Key File to Disown')
-    parser_induct.set_defaults(func=commandDisown)
+    parserDisown = subparsers.add_parser('disown', help='Disown a User')
+    parserDisown.add_argument('--identity', type=str, help='Public Key Value or File to Disown. If none, Remove self.')
+    parserDisown.add_argument('--confirm', type=str, help='Confirm when Removing Self.')
+    parserDisown.set_defaults(func=commandDisown)
 
-    parser_induct = subparsers.add_parser('rotate', help='Rotate Keys in Vault')
-    parser_induct.set_defaults(func=commandRotate)
+    parserRotate = subparsers.add_parser('rotate', help='Rotate Keys in Vault')
+    parserRotate.set_defaults(func=commandRotate)
 
     args = parser.parse_args()
     try:
         func = args.func
     except AttributeError:
         func = None
-        print(parser.format_help())
+        _printMessage(parser.format_help())
     try:
         if func:
             func(args)
     except Exception as exc:
         errorMessage = str(exc) or 'Exception Occured'
-        print(errorMessage)
+        _printError(errorMessage)
 
 if __name__ == '__main__':
     main()

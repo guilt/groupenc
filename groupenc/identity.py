@@ -51,32 +51,29 @@ class Identity:
             self.keyPair = _initializeKey(givenKey)
         else:
             self.keyPair = _initializeOrGetKeyPair(privateKeyFile, publicKeyFile)
+        assert self.keyPair, "Unable to get KeyPair"
 
     def getPublicKey(self):
-        assert self.keyPair
         publicKey = self.keyPair.publickey()
-        assert publicKey
+        assert publicKey, "Public Key Unspecified"
         return makeStringOf(publicKey.export_key())
 
     def getId(self):
-        assert self.keyPair
         publicKey = self.keyPair.publickey()
-        assert publicKey
+        assert publicKey, "Public Key Unspecified"
         publicKeyN = publicKey.n
         publicKeyE = publicKey.e
         sha256 = SHA256.new(makeBytesOf("{}:{}".format(publicKeyN, publicKeyE)))
         return sha256.hexdigest()
 
     def encryptPublic(self, message, encoding=DEFAULT_KEY_ENCODING):
-        assert message
-        assert self.keyPair
+        assert message, "Message Unspecified"
         publicKey = self.keyPair.publickey()
-        assert publicKey
+        assert publicKey, "Public Key Unspecified"
         pkcs1 = PKCS1_OAEP.new(publicKey)
         return encodeToBase64(pkcs1.encrypt(makeBytesOf(message, encoding)))
 
     def decrypt(self, message, encoding=DEFAULT_KEY_ENCODING):
-        assert message
-        assert self.keyPair
+        assert message, "Message Unspecified"
         pkcs1 = PKCS1_OAEP.new(self.keyPair)
         return makeStringOf(pkcs1.decrypt(decodeFromBase64(message)), encoding)
