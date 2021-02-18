@@ -200,7 +200,7 @@ class Vault:
     def rotate(self):
         groupKey = self._getGroupKeyAsBytes()
         newGroupKey = _bootstrapGroupKey()
-        assert newGroupKey != groupKey, "Unable to derive a New Group Key"
+        assert (makeBytesOf(newGroupKey) != makeBytesOf(groupKey)), "Unable to derive a New Group Key"
 
         if not HASH_SECRETS:
             for secretKey in list(self.listSecrets()):
