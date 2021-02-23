@@ -84,6 +84,24 @@ def _commandBootstrap(args):
     _printSuccess('Vault Ready.')
 
 
+def _commandId(args):
+    """
+    Show Identity
+    :param args: System Arguments Passed
+    """
+    vaultFile = args.vault_file
+    privateKeyFile = args.private_key_file
+    publicKeyFile = args.public_key_file
+
+    _debugMessage('Bootstrapping Identity, this will take some time ...')
+    identity = Identity(privateKeyFile, publicKeyFile)
+    _debugMessage('Opening or Bootstrapping Vault ...')
+    vault = Vault(identity=identity, vaultFile=vaultFile)
+
+    _debugMessage('Listing Identity ...')
+    _printMessage(vault.identity.getPublicKey())
+
+
 def _commandSecretAdd(args):
     """
     Add a Secret
@@ -250,6 +268,9 @@ def main():
 
     parserBootstrap = subparsers.add_parser('bootstrap', help='Bootstrap')
     parserBootstrap.set_defaults(func=_commandBootstrap)
+
+    parserId = subparsers.add_parser('id', help='Show Identity')
+    parserId.set_defaults(func=_commandId)
 
     parserSecret = subparsers.add_parser('secret', help='Manage Secrets')
     subparserSecret = parserSecret.add_subparsers()

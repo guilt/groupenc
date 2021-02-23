@@ -3,7 +3,7 @@ groupenc: Group Encryption Utilities
 """
 from setuptools import setup, find_packages
 
-VERSION = '0.1.2'
+VERSION = '0.2.0'
 
 def get_requirements():
     with open('requirements.txt') as requirements:

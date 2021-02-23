@@ -21,6 +21,15 @@ groupenc bootstrap
 It would typically create a file called `.groupenc.json` and a private key
 /public key pair in `~/.groupenc_private` and `~/.groupenc_public`.
 
+You can share your own identity with other people, so they
+can induct you later:
+
+```bash
+groupenc id
+```
+
+It typically displays your public key.
+
 ## Secrets
 
 To add a secret, use:
