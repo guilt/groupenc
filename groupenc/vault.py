@@ -102,6 +102,7 @@ def _hashKey(message):
     sha256 = SHA256.new(makeBytesOf(message))
     return sha256.hexdigest()
 
+
 def _encryptKey(encryptionKey, message):
     assert encryptionKey, "Encryption Key Unspecified"
     if HASH_SECRETS:
@@ -114,6 +115,7 @@ def _decryptKey(encryptionKey, message):
     if HASH_SECRETS:
         return None
     return makeBytesOf(_decryptValue(encryptionKey, message))
+
 
 class Vault:
     identity = None
@@ -129,7 +131,7 @@ class Vault:
         groupKeyEncrypted = self.vaultContents.get(GROUP_KEY_HIVE).get(self.identity.getId())
         if not groupKeyEncrypted:
             return None
-        return self.identity.decrypt(groupKeyEncrypted)
+        return makeBytesOf(self.identity.decrypt(groupKeyEncrypted), DEFAULT_KEY_ENCODING)
 
     def _listSecretsEncrypted(self):
         for encryptedSecretKey in self.vaultContents.get(SECRETS_HIVE, {}):
@@ -200,7 +202,7 @@ class Vault:
     def rotate(self):
         groupKey = self._getGroupKeyAsBytes()
         newGroupKey = _bootstrapGroupKey()
-        assert (makeBytesOf(newGroupKey) != makeBytesOf(groupKey)), "Unable to derive a New Group Key"
+        assert (newGroupKey != groupKey), "Unable to derive a New Group Key"
 
         if not HASH_SECRETS:
             for secretKey in list(self.listSecrets()):

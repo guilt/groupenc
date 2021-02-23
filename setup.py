@@ -3,7 +3,7 @@ groupenc: Group Encryption Utilities
 """
 from setuptools import setup, find_packages
 
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 def get_requirements():
     with open('requirements.txt') as requirements:
@@ -25,7 +25,10 @@ setup(name='groupenc',
       [
           'Topic :: Software Development :: Libraries',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
           'Programming Language :: Python :: 3.8',
+          'Programming Language :: Python :: 3.9',
       ],
       keywords='groupenc encryption group vault offline',
       author='Karthik Kumar Viswanathan',
