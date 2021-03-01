@@ -128,7 +128,7 @@ class Vault:
         self.vaultContents = _initializeOrGetVault(self.identity, self.vaultFile)
 
     def _getGroupKeyAsBytes(self):
-        groupKeyEncrypted = self.vaultContents.get(GROUP_KEY_HIVE).get(self.identity.getId())
+        groupKeyEncrypted = self.vaultContents.get(GROUP_KEY_HIVE, {}).get(self.identity.getId())
         if not groupKeyEncrypted:
             return None
         return makeBytesOf(self.identity.decrypt(groupKeyEncrypted), DEFAULT_KEY_ENCODING)
