@@ -3,23 +3,23 @@ groupenc: Group Encryption Utilities
 """
 from setuptools import setup, find_packages
 
-VERSION = '0.3.0-SNAPSHOT'
+VERSION = '0.3.0'
 
-def get_requirements():
+def getRequirements():
     with open('requirements.txt') as requirements:
         for req in requirements:
             req = req.strip()
             if req and not req.startswith('#'):
                 yield req
 
-def get_readme():
+def getReadme():
     with open('README.md') as readme:
         return readme.read()
 
 setup(name='groupenc',
       version=VERSION,
       description="groupenc: Group Encryption Utilities",
-      long_description=get_readme(),
+      long_description=getReadme(),
       long_description_content_type='text/markdown',
       classifiers=
       [
@@ -38,5 +38,5 @@ setup(name='groupenc',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=True,
-      install_requires=list(get_requirements()),
+      install_requires=list(getRequirements()),
      )

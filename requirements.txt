@@ -1,2 +1,3 @@
-pycryptodome==3.9.9
+setuptools
+pycryptodome>=3.9.0
 colorama
